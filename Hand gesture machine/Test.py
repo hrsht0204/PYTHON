@@ -26,8 +26,6 @@ def calculate_angle(p1, p2, p3):
     return angle
 
 # Function to detect "Victory" sign (index and middle fingers forming a "V")
-# Function to detect "Victory" sign (index and middle fingers forming a "V")
-# Function to detect "Victory" sign (index and middle fingers forming a "V")
 def is_victory_sign(landmarks):
     # Check if the index and middle fingers are both up and making a V shape
     # Angle between index and middle finger should be roughly 90 degrees
@@ -44,56 +42,6 @@ def is_victory_sign(landmarks):
 
     return False
 
-
-# Function to calculate angle between three points
-# Function to count raised fingers
-def count_raised_fingers(landmarks, hand_info):
-    raised_fingers = 0
-    
-    # Determine if it's left or right hand
-    is_left_hand = hand_info.classification[0].label == 'Left'
-    
-    # Thumb (Landmarks 4, 2, 0) - Check if the thumb is open using angle
-    thumb_angle = calculate_angle(landmarks[0], landmarks[2], landmarks[4])  # Angle between wrist, base, and tip of the thumb
-    
-    # Check thumb for left hand and right hand with different thresholds
-    if is_left_hand:
-        if thumb_angle > 160:  # Left hand thumb open angle check
-            raised_fingers += 1
-    else:
-        if thumb_angle < 60:  # Right hand thumb open angle check (smaller angle)
-            raised_fingers += 1
-
-    # Index (Landmarks 8, 6)
-    if landmarks[8].y < landmarks[6].y:  # Index tip (8) above the index base (6)
-        raised_fingers += 1
-
-    # Middle (Landmarks 12, 10)
-    if landmarks[12].y < landmarks[10].y:  # Middle tip (12) above the middle base (10)
-        raised_fingers += 1
-
-    # Ring (Landmarks 16, 14)
-    if landmarks[16].y < landmarks[14].y:  # Ring tip (16) above the ring base (14)
-        raised_fingers += 1
-
-    # Pinky (Landmarks 20, 18)
-    if landmarks[20].y < landmarks[18].y:  # Pinky tip (20) above the pinky base (18)
-        raised_fingers += 1
-
-    return raised_fingers
-
-
-
-
-# Function to determine which hand it is based on the wrist landmark (landmarks[0])
-def get_hand_label(landmarks):
-    wrist_x = landmarks[0].x  # Get the x-coordinate of the wrist
-    if wrist_x < 0.5:  # If the wrist is on the left side of the frame, it's the left hand
-        return "Left Hand"
-    else:  # If the wrist is on the right side of the frame, it's the right hand
-        return "Right Hand"
-
-# Start the video loop
 # Start the video loop
 while True:
     ret, frame = cap.read()
