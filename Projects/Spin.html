@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #8cd3ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            background: rgb(255, 255, 255);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #slot-machine {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        @keyframes roll {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(20px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .slot {
+            width: 50px;
+            height: 50px;
+            margin: 0 5px;
+            font-size: 24px;
+            background-color: #ffbc3f;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        .winner {
+            background-color: rgb(0, 255, 0);
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        .rolling {
+            animation: roll 0.5s ease-in-out;
+        }
+
+        #controls {
+            margin: 20px 0;
+        }
+
+        #lines-selection {
+            margin: 10px 0;
+        }
+
+        /* Added styles for vertical alignment */
+        .column {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Slot Machine Game</h1>
+        <div id="slot-machine"></div>
+        <div id="controls">
+            <input type="number" id="bet" placeholder="Enter your bet" />
+            <div id="lines-selection">
+                <label><input type="checkbox" class="line-checkbox" value="1" /> Line 1</label>
+                <label><input type="checkbox" class="line-checkbox" value="2" /> Line 2</label>
+                <label><input type="checkbox" class="line-checkbox" value="3" /> Line 3</label>
+            </div>
+            <button id="spin-btn">Spin</button>
+        </div>
+        <div id="message"></div>
+        <div id="balance">Current Balance: ₹<span id="current-balance">1000</span></div>
+    </div>
+    <script>
+        const MAX_BET = 1000000000000000;
+        const MIN_BET = 10;
+        let balance = 0; // Starting balance
+        const symbolCount = { "🎁": 9, "🖤": 10, "✔": 11, "✌": 12 };
+        const symbolValue = { "🎁": 10, "🖤": 5, "✔": 4, "✌": 2 };
+
+        // Prompt for initial deposit
+        function promptDeposit() {
+            let deposit = prompt("What amount would you like to deposit into your balance?");
+            deposit = parseInt(deposit);
+            if (!isNaN(deposit) && deposit > 0) {
+                balance = deposit;
+                updateBalance();
+            } else {
+                alert("Invalid deposit amount. Please refresh the page to try again.");
+                window.location.reload();
+            }
+        }
+
+        document.getElementById('spin-btn').addEventListener('click', spin);
+
+        function spin() {
+            const betInput = document.getElementById('bet');
+            const bet = parseInt(betInput.value);
+            const selectedLines = Array.from(document.querySelectorAll('.line-checkbox:checked')).map(el => parseInt(el.value));
+
+            if (isNaN(bet) || bet < MIN_BET || bet > MAX_BET) {
+                showMessage(`Bet must be between ₹${MIN_BET} and ₹${MAX_BET}.`);
+                return;
+            }
+
+            if (selectedLines.length === 0) {
+                showMessage('Please select at least one line to bet on.');
+                return;
+            }
+
+            const totalBet = bet * selectedLines.length;
+            if (totalBet > balance) {
+                showMessage(`Insufficient balance for a total bet of ₹${totalBet}. Current balance: ₹${balance}`);
+                return;
+            }
+
+            balance -= totalBet;
+            updateBalance();
+
+            // Start the rolling animation
+            displayRollingSlots();
+
+            // Wait for 1 second before showing the result (simulates the spinning effect)
+            setTimeout(() => {
+                const slots = getSlotMachineSpin();
+                displaySlots(slots, selectedLines, bet);
+                const { winnings, winningLines } = checkWinnings(slots, bet, selectedLines);
+                showMessage(`You won ₹${winnings} on lines: ${winningLines.join(', ')}`);
+                balance += winnings;
+                updateBalance();
+            }, 1000); // 1 second delay
+        }
+
+        function getSlotMachineSpin() {
+            const allSymbols = [];
+            for (const symbol in symbolCount) {
+                for (let i = 0; i < symbolCount[symbol]; i++) {
+                    allSymbols.push(symbol);
+                }
+            }
+
+            const columns = [];
+            for (let i = 0; i < 3; i++) {
+                const column = [];
+                for (let j = 0; j < 3; j++) {
+                    const randomIndex = Math.floor(Math.random() * allSymbols.length);
+                    column.push(allSymbols[randomIndex]);
+                }
+                columns.push(column);
+            }
+            return columns;
+        }
+
+        function displayRollingSlots() {
+            const slotMachine = document.getElementById('slot-machine');
+            slotMachine.innerHTML = '';
+            for (let col = 0; col < 3; col++) {
+                const columnDiv = document.createElement('div');
+                columnDiv.classList.add('column');
+
+                for (let row = 0; row < 3; row++) {
+                    const slot = document.createElement('div');
+                    slot.classList.add('slot', 'rolling'); // Add the rolling class
+                    slot.innerText = ''; // Clear the slot while rolling
+                    columnDiv.appendChild(slot);
+                }
+                slotMachine.appendChild(columnDiv);
+            }
+        }
+
+        function displaySlots(columns, selectedLines, bet) {
+            const slotMachine = document.getElementById('slot-machine');
+            slotMachine.innerHTML = ''; // Clear previous slots
+
+            // Create a column for each column of the slot machine
+            for (let col = 0; col < 3; col++) {
+                const columnDiv = document.createElement('div');
+                columnDiv.classList.add('column');
+
+                for (let row = 0; row < 3; row++) {
+                    const slot = document.createElement('div');
+                    slot.classList.add('slot');
+                    slot.innerText = columns[col][row]; // Set the slot value
+
+                    // Check if this slot is part of a winning line
+                    if (selectedLines.includes(row + 1)) {
+                        const rowSymbols = columns.map(column => column[row]); // Get symbols in the selected row
+                        const isWinningLine = rowSymbols.every(symbol => symbol === rowSymbols[0]) && rowSymbols[0] !== undefined;
+
+                        // Highlight winning emojis
+                        if (isWinningLine) {
+                            slot.classList.add('winner');
+                        }
+                    }
+
+                    columnDiv.appendChild(slot);
+                }
+                slotMachine.appendChild(columnDiv);
+            }
+        }
+
+        function checkWinnings(columns, bet, selectedLines) {
+            let winnings = 0;
+            const winningLines = [];
+
+            // Check selected lines (1 to 3 corresponding to the rows)
+            for (let line of selectedLines) {
+                const rowSymbols = columns.map(column => column[line - 1]); // Get symbols in the selected row
+                if (rowSymbols.every(symbol => symbol === rowSymbols[0]) && rowSymbols[0] !== undefined) {
+                    winnings += symbolValue[rowSymbols[0]] * bet; // Calculate winnings based on symbol value
+                    winningLines.push(line);
+                }
+            }
+            return { winnings, winningLines };
+        }
+
+        function updateBalance() {
+            document.getElementById('current-balance').innerText = balance;
+        }
+
+        function showMessage(msg) {
+            document.getElementById('message').innerText = msg;
+        }
+
+        // Prompt user for initial deposit when the page loads
+        window.onload = promptDeposit;
+    </script>
+</body>
+</html>
