@@ -2,6 +2,8 @@ import os
 import cv2
 import mediapipe as mp
 import math
+import pyautogui  # Library to simulate keyboard events
+import pygetwindow as gw
 
 # Path to the gestures folder where images will be saved
 gestures_folder = r"C:\Users\Hari krishan\Pictures\python\Hand gesture machine\Gestures"
@@ -16,7 +18,36 @@ hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7
 mp_draw = mp.solutions.drawing_utils
 
 # Start video capture
+
+def focus_youtube_window():
+    try:
+        youtube_window = gw.getWindowsWithTitle("YouTube")[0]  # Get the first window with 'YouTube' in the title
+        if youtube_window:
+            youtube_window.activate()  # Bring YouTube window into focus
+    except IndexError:
+        print("No YouTube window found.")
+
+
+def is_all_fingers_open(landmarks):
+    # Check if all fingers are raised and not spread too far like a "V"
+    if landmarks[8].y < landmarks[6].y and landmarks[12].y < landmarks[10].y and landmarks[16].y < landmarks[14].y and landmarks[20].y < landmarks[18].y:
+        thumb_angle = calculate_angle(landmarks[0], landmarks[2], landmarks[4])
+        if 60 < thumb_angle < 120:  # Not too wide open like a "V"
+            return True
+    return False
+
+def is_all_fingers_open(landmarks):
+    # Check if all fingers are raised and not spread too far like a "V"
+    if landmarks[8].y < landmarks[6].y and landmarks[12].y < landmarks[10].y and landmarks[16].y < landmarks[14].y and landmarks[20].y < landmarks[18].y:
+        thumb_angle = calculate_angle(landmarks[0], landmarks[2], landmarks[4])
+        if 60 < thumb_angle < 120:  # Not too wide open like a "V"
+            return True
+    return False
+
 cap = cv2.VideoCapture(0)
+
+# To keep track of video playback state (playing or paused)
+is_paused = False
 
 # Function to calculate angle between three points
 def calculate_angle(p1, p2, p3):
@@ -100,6 +131,18 @@ while True:
             mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
             landmarks = hand_landmarks.landmark
+            if is_all_fingers_open(landmarks):
+                if not is_paused:
+                    print("All fingers open detected! Pausing the YouTube video.")
+                    focus_youtube_window()  # Ensure YouTube window is in focus
+                    pyautogui.press('space')  # Simulate pressing the spacebar (pauses YouTube video)
+                    is_paused = True
+            else:
+                if is_paused:
+                    print("Gesture not detected. Resuming the YouTube video.")
+                    focus_youtube_window()  # Ensure YouTube window is in focus
+                    pyautogui.press('space')  # Simulate pressing the spacebar (resumes YouTube video)
+                    is_paused = False
 
             # Get the correct hand label based on the wrist's x-coordinate
             hand_label = get_hand_label(landmarks)
