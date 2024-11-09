@@ -28,21 +28,9 @@ def focus_youtube_window():
         print("No YouTube window found.")
 
 
-def is_all_fingers_open(landmarks):
-    # Check if all fingers are raised and not spread too far like a "V"
-    if landmarks[8].y < landmarks[6].y and landmarks[12].y < landmarks[10].y and landmarks[16].y < landmarks[14].y and landmarks[20].y < landmarks[18].y:
-        thumb_angle = calculate_angle(landmarks[0], landmarks[2], landmarks[4])
-        if 60 < thumb_angle < 120:  # Not too wide open like a "V"
-            return True
-    return False
 
-def is_all_fingers_open(landmarks):
-    # Check if all fingers are raised and not spread too far like a "V"
-    if landmarks[8].y < landmarks[6].y and landmarks[12].y < landmarks[10].y and landmarks[16].y < landmarks[14].y and landmarks[20].y < landmarks[18].y:
-        thumb_angle = calculate_angle(landmarks[0], landmarks[2], landmarks[4])
-        if 60 < thumb_angle < 120:  # Not too wide open like a "V"
-            return True
-    return False
+
+
 
 cap = cv2.VideoCapture(0)
 
@@ -115,6 +103,17 @@ def get_hand_label(landmarks):
         return "Left Hand"
     else:  # If the wrist is on the right side of the frame, it's the right hand
         return "Right Hand"
+def are_all_fingers_open(landmarks):
+    if landmarks[8].y < landmarks[6].y and landmarks[12].y < landmarks[10].y and landmarks[16].y < landmarks[14].y and landmarks[20].y < landmarks[18].y:
+        return True
+    return False
+
+# Check if all fingers are closed
+def are_all_fingers_closed(landmarks):
+    if landmarks[8].y > landmarks[6].y and landmarks[12].y > landmarks[10].y and landmarks[16].y > landmarks[14].y and landmarks[20].y > landmarks[18].y:
+        return True
+    return False
+
 
 # Start the video loop
 while True:
@@ -131,19 +130,19 @@ while True:
             mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
             landmarks = hand_landmarks.landmark
-            if is_all_fingers_open(landmarks):
+                       # Check for thumb-up gesture to toggle video pause/resume
+            if are_all_fingers_open(landmarks):
                 if not is_paused:
-                    print("All fingers open detected! Pausing the YouTube video.")
-                    focus_youtube_window()  # Ensure YouTube window is in focus
-                    pyautogui.press('space')  # Simulate pressing the spacebar (pauses YouTube video)
+                    focus_youtube_window()
+                    pyautogui.press('space')
                     is_paused = True
-            else:
-                if is_paused:
-                    print("Gesture not detected. Resuming the YouTube video.")
-                    focus_youtube_window()  # Ensure YouTube window is in focus
-                    pyautogui.press('space')  # Simulate pressing the spacebar (resumes YouTube video)
-                    is_paused = False
 
+            # Detect all fingers closed (Stop)
+            elif are_all_fingers_closed(landmarks):
+                if is_paused:
+                    focus_youtube_window()
+                    pyautogui.press('space')
+                    is_paused = False
             # Get the correct hand label based on the wrist's x-coordinate
             hand_label = get_hand_label(landmarks)
 
